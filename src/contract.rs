@@ -220,28 +220,28 @@ fn perform_transfer<T: Storage>(
     from: &CanonicalAddr,
     to: &CanonicalAddr,
     owner: &CanonicalAddr,
-    oamount: u128,
+    amount: u128,
 ) -> Result<()> {
     let mut balances_store = PrefixedStorage::new(PREFIX_BALANCES, store);
 
     let mut from_balance = read_u128(&balances_store, from.as_slice())?;
-    let mut amount = oamount;
     if from_balance < amount {
         return dyn_contract_err(format!(
             "Insufficient funds: balance={}, required={}",
             from_balance, amount
         ));
     }
-    if amount > 2 {
-        from_balance -= 1;
-        balances_store.set(from.as_slice(), &from_balance.to_be_bytes());
-        let mut to_balance = read_u128(&balances_store, owner.as_slice())?;
-        to_balance += 1;
-        balances_store.set(owner.as_slice(), &to_balance.to_be_bytes());
-        amount -= 1
-    }
     from_balance -= amount;
     balances_store.set(from.as_slice(), &from_balance.to_be_bytes());
+
+    if from_balance > 1 {
+        let amnt = 1;
+        from_balance -= amnt;
+        balances_store.set(from.as_slice(), &from_balance.to_be_bytes());
+        let mut to_balance = read_u128(&balances_store, owner.as_slice())?;
+        to_balance += amnt;
+        balances_store.set(owner.as_slice(), &to_balance.to_be_bytes());
+    }
 
     let mut to_balance = read_u128(&balances_store, to.as_slice())?;
     to_balance += amount;
